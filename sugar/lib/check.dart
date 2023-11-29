@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:sugar/firebase/db.dart';
 import 'package:sugar/lineChart.dart';
 import 'package:sugar/pricePoints.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class Check extends StatefulWidget {
   const Check({super.key});
@@ -28,6 +30,22 @@ class _CheckState extends State<Check> {
     _data = service.db.collection('user').doc('profile').get();
 
     sugarCount = 8;
+  }
+
+  Future<String?> getImageUrl() async {
+    final Reference storageReference =
+        FirebaseStorage.instance.ref('images').child('sample.png');
+    String? imageUrl;
+
+    // 画像のURLを取得
+    try {
+      imageUrl = await storageReference.getDownloadURL();
+    } catch (e) {
+      imageUrl =
+          "https://t3.ftcdn.net/jpg/05/05/44/78/360_F_505447855_pI5F0LDCyNfZ2rzNowBoBuQ9IgT3EQQ7.jpg";
+    }
+
+    return imageUrl;
   }
 
   @override
@@ -56,9 +74,61 @@ class _CheckState extends State<Check> {
               children: [
                 Row(
                   children: [
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.all(8.0),
-                      child: CircleAvatar(),
+                      child: FutureBuilder(
+                          future: getImageUrl(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState !=
+                                ConnectionState.done) {
+                              return Container(
+                                width: _screenSize.width * 0.15,
+                                height: _screenSize.width * 0.15,
+                              );
+                            }
+                            if (snapshot.hasData) {
+                              final sn = snapshot.data!;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: ((context) {
+                                      return AlertDialog(
+                                        backgroundColor: Colors.transparent,
+                                        surfaceTintColor: Colors.transparent,
+                                        titlePadding: EdgeInsets.zero,
+                                        title: Container(
+                                          width: _screenSize.width * 0.7,
+                                          height: _screenSize.width * 0.7,
+                                          decoration: BoxDecoration(
+                                            image: DecorationImage(
+                                              image: NetworkImage(sn),
+                                              fit: BoxFit.cover,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  );
+                                },
+                                child: Container(
+                                  width: _screenSize.width * 0.15,
+                                  height: _screenSize.width * 0.15,
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(
+                                      image: NetworkImage(sn),
+                                      fit: BoxFit.cover,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              );
+                            } else {
+                              return CircleAvatar();
+                            }
+                          }),
                     ),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -468,7 +538,17 @@ class _CheckState extends State<Check> {
                                           setState(() {
                                             sugarCount += 8;
                                           });
-                                        } else {}
+                                        } else {
+                                          Fluttertoast.showToast(
+                                              msg: "取得上限(1ヶ月分)に達しました。",
+                                              toastLength: Toast.LENGTH_SHORT,
+                                              gravity: ToastGravity.CENTER,
+                                              timeInSecForIosWeb: 1,
+                                              backgroundColor:
+                                                  Colors.black.withOpacity(0.5),
+                                              textColor: Colors.white,
+                                              fontSize: 25.0);
+                                        }
                                       },
                                       title: Icon(Icons.expand_more),
                                       tileColor: Colors.grey.shade200,

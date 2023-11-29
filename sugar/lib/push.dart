@@ -8,6 +8,7 @@ import 'package:sugar/main.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class Push extends StatefulWidget {
   Push({super.key, required this.param});
@@ -628,6 +629,18 @@ class _PushState5 extends State<Push5> {
     }
   }
 
+  Future upload(File image) async {
+    final imageFile = File(image.path);
+    FirebaseStorage storage = FirebaseStorage.instance;
+    try {
+      await storage.ref('images').child('sample.png').putFile(imageFile);
+    } catch (e) {
+      print(e);
+    }
+
+    return;
+  }
+
   @override
   Widget build(BuildContext context) {
     final service = FirebaseService();
@@ -671,7 +684,7 @@ class _PushState5 extends State<Push5> {
                           height: _screenSize.width * 0.5,
                           decoration: BoxDecoration(
                             image: DecorationImage(
-                                image: Image.file(image!) as ImageProvider),
+                                image: FileImage(image!), fit: BoxFit.cover),
                             shape: BoxShape.circle,
                           ),
                         )
@@ -692,7 +705,9 @@ class _PushState5 extends State<Push5> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      onPressed: pickImage,
+                      onPressed: () {
+                        pickImage();
+                      },
                       child: Icon(
                         Icons.image,
                         color: Colors.white,
@@ -710,26 +725,12 @@ class _PushState5 extends State<Push5> {
               width: 200,
               child: ElevatedButton(
                 onPressed: () {
-                  if (data != '') {
-                    if (int.parse(data) <= 200) {
-                      service.db
-                          .collection('user')
-                          .doc('profile')
-                          .update({widget.param.keys.elementAt(0): data});
-                      Navigator.pop(context);
-                    } else {
-                      Fluttertoast.showToast(
-                          msg: "正しい値を入力してください。",
-                          toastLength: Toast.LENGTH_SHORT,
-                          gravity: ToastGravity.BOTTOM,
-                          timeInSecForIosWeb: 1,
-                          backgroundColor: Colors.black.withOpacity(0.5),
-                          textColor: Colors.white,
-                          fontSize: 25.0);
-                    }
+                  if (image != null) {
+                    upload(image!);
+                    Navigator.pop(context);
                   } else {
                     Fluttertoast.showToast(
-                        msg: "数値を入力してください。",
+                        msg: "画像を選択してください。",
                         toastLength: Toast.LENGTH_SHORT,
                         gravity: ToastGravity.BOTTOM,
                         timeInSecForIosWeb: 1,
