@@ -1,7 +1,4 @@
 import 'dart:collection';
-import 'dart:ffi';
-import 'dart:math';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:sugar/pricePoints.dart';
