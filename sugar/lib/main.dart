@@ -1,10 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:sugar/firebase/db.dart';
 import 'firebase_options.dart';
 import 'check.dart';
 import 'profile.dart';
 import 'push.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +30,103 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: MyHomePage(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // スプラッシュ画面などに書き換えても良い
+            return const SizedBox();
+          }
+          if (snapshot.hasData) {
+            // User が null でなない、つまりサインイン済みのホーム画面へ
+
+            return MyHomePage();
+          }
+          // User が null である、つまり未サインインのサインイン画面へ
+          return googleLogin();
+        },
+      ),
+    );
+  }
+}
+
+class googleLogin extends StatefulWidget {
+  const googleLogin({super.key});
+
+  @override
+  State<googleLogin> createState() => _googleLoginState();
+}
+
+class _googleLoginState extends State<googleLogin> {
+  @override
+  Widget build(BuildContext context) {
+    final Size size = MediaQuery.of(context).size;
+    return Scaffold(
+      backgroundColor: Colors.orange.shade400,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              width: size.width * 0.5,
+              height: size.width * 0.5,
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/sugar.png'),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            height: size.height * 0.2,
+          ),
+          GestureDetector(
+            onTap: () {
+              print(00);
+              try {
+                AuthService().signWithGoogle();
+              } catch (e) {
+                print(e);
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                width: size.width * 0.9,
+                height: size.height * 0.1,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.black.withOpacity(0.5)),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Container(
+                          width: size.height * 0.1,
+                          height: size.height * 0.1,
+                          decoration: BoxDecoration(
+                            image: DecorationImage(
+                              image: AssetImage('assets/Google.png'),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Text('Googleアカウントでサインイン'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
+        ],
+      ),
     );
   }
 }
@@ -63,28 +162,27 @@ class _MyHomePageState extends State<MyHomePage> {
         child: FloatingActionButton(
           onPressed: () {
             Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      Push3(
-                    date: DateTime.now(),
-                  ),
-                  //この下アニメーション
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                    final Offset begin = Offset(0.0, 1.0);
-                    final Offset end = Offset.zero;
-                    final Animatable<Offset> tween =
-                        Tween(begin: begin, end: end)
-                            .chain(CurveTween(curve: Curves.easeInOut));
-                    final Animation<Offset> offsetAnimation =
-                        animation.drive(tween);
-                    return SlideTransition(
-                      position: offsetAnimation,
-                      child: child,
-                    );
-                  },
-                ));
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) => Push3(
+                  date: DateTime.now(),
+                ),
+                //この下アニメーション
+                transitionsBuilder:
+                    (context, animation, secondaryAnimation, child) {
+                  final Offset begin = Offset(0.0, 1.0);
+                  final Offset end = Offset.zero;
+                  final Animatable<Offset> tween = Tween(begin: begin, end: end)
+                      .chain(CurveTween(curve: Curves.easeInOut));
+                  final Animation<Offset> offsetAnimation =
+                      animation.drive(tween);
+                  return SlideTransition(
+                    position: offsetAnimation,
+                    child: child,
+                  );
+                },
+              ),
+            );
           },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

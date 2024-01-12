@@ -278,6 +278,39 @@ class _ProfileState extends State<Profile> {
                 );
               },
             ),
+            const Padding(
+              padding: EdgeInsets.all(15.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    'ログアウト',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: 1,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  onTap: () {
+                    try {
+                      AuthService().signOutGoogle();
+                    } catch (e) {
+                      print(e);
+                    }
+                  },
+                  title: Text('ログアウト'),
+                  trailing: Icon(
+                    Icons.arrow_circle_right,
+                    color: Colors.grey.shade500,
+                  ),
+                );
+              },
+            ),
             SizedBox(
               height: _screenSize.height * 0.1,
             )
