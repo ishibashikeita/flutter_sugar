@@ -1,4 +1,7 @@
 import 'dart:collection';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:google_sign_in_ios/google_sign_in_ios.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -51,4 +54,41 @@ class FirebaseService {
 
   //   yield* ssd;
   // }
+}
+
+class AuthService {
+  signWithGoogle() async {
+    try {
+      final GoogleSignInAccount? gUser = await GoogleSignIn().signIn();
+      final GoogleSignInAuthentication gAuth = await gUser!.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: gAuth.accessToken,
+        idToken: gAuth.idToken,
+      );
+      return await FirebaseAuth.instance.signInWithCredential(credential);
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  signOutGoogle() async {
+    FirebaseAuth.instance.signOut();
+  }
+
+  Future userCheck() async {
+    try {
+      final _user = FirebaseAuth.instance;
+      final collectionRef =
+          FirebaseFirestore.instance.collection(_user.currentUser!.uid);
+      final querySnapshot = await collectionRef.get();
+      final queryDocSnapshot = querySnapshot.docs;
+      var data;
+      for (final snapshot in queryDocSnapshot) {
+        data = snapshot.data();
+      }
+      return await data;
+    } catch (e) {
+      print(e);
+    }
+  }
 }

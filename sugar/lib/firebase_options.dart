@@ -17,7 +17,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -25,7 +28,10 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -43,16 +49,6 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDkHZmw8ggw0KOGm9WiN4YCY_9Mu0cxrs0',
-    appId: '1:511882466709:web:ac53a536c7dd6642b9529c',
-    messagingSenderId: '511882466709',
-    projectId: 'sugar-2474f',
-    authDomain: 'sugar-2474f.firebaseapp.com',
-    storageBucket: 'sugar-2474f.appspot.com',
-    measurementId: 'G-8NDS48JVP1',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCD34nhy85UdaA7nS64bh_h7JgJCcSkg40',
     appId: '1:511882466709:android:95f84a6cccd7c664b9529c',
@@ -63,19 +59,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyC92N_uPL1FiyNlc1at4oW4GxvfXCkWYNI',
-    appId: '1:511882466709:ios:b25bd5e87760e732b9529c',
-    messagingSenderId: '511882466709',
-    projectId: 'sugar-2474f',
-    storageBucket: 'sugar-2474f.appspot.com',
-    iosBundleId: 'com.example.sugar',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyC92N_uPL1FiyNlc1at4oW4GxvfXCkWYNI',
     appId: '1:511882466709:ios:9e3a53a537b8f16db9529c',
     messagingSenderId: '511882466709',
     projectId: 'sugar-2474f',
     storageBucket: 'sugar-2474f.appspot.com',
+    iosClientId: '511882466709-9ve2fhu94c7fac80vq386qmi6m9536fp.apps.googleusercontent.com',
     iosBundleId: 'com.example.sugar.RunnerTests',
   );
 }
