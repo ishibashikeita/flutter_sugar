@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sugar/firebase/db.dart';
 import 'package:sugar/outputPDF.dart';
@@ -296,9 +297,42 @@ class _ProfileState extends State<Profile> {
               itemCount: 1,
               itemBuilder: (context, index) {
                 return ListTile(
-                  onTap: () {
+                  onTap: () async {
                     try {
-                      AuthService().signOutGoogle();
+                      final service = AuthService();
+                      final email = await service.backEmail();
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return CupertinoAlertDialog(
+                            title: Text('※ログアウト'),
+                            content: Text(email.toString() + 'からログアウトしますか？'),
+                            actions: <CupertinoDialogAction>[
+                              CupertinoDialogAction(
+                                isDefaultAction: true,
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: Text(
+                                  'キャンセル',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                              CupertinoDialogAction(
+                                isDestructiveAction: true,
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  AuthService().signOutGoogle();
+                                },
+                                child: Text(
+                                  'OK',
+                                  style: TextStyle(color: Colors.blue),
+                                ),
+                              )
+                            ],
+                          );
+                        },
+                      );
                     } catch (e) {
                       print(e);
                     }

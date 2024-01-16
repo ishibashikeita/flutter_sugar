@@ -71,6 +71,11 @@ class AuthService {
     }
   }
 
+  Future backEmail() async {
+    final email = await FirebaseAuth.instance.currentUser!.email;
+    return await email;
+  }
+
   signOutGoogle() async {
     FirebaseAuth.instance.signOut();
   }
@@ -78,17 +83,34 @@ class AuthService {
   Future userCheck() async {
     try {
       final _user = FirebaseAuth.instance;
-      final collectionRef =
-          FirebaseFirestore.instance.collection(_user.currentUser!.uid);
-      final querySnapshot = await collectionRef.get();
-      final queryDocSnapshot = querySnapshot.docs;
-      var data;
-      for (final snapshot in queryDocSnapshot) {
-        data = snapshot.data();
-      }
-      return await data;
+      DocumentSnapshot<Map<String, dynamic>> _collectionRef =
+          await FirebaseFirestore.instance
+              // .collection('user')
+              .collection(_user.currentUser!.uid)
+              .doc('profile')
+              .get();
+      //ここをuserに変えれば一旦動く。
+      final _check = _collectionRef.exists;
+      return _check;
     } catch (e) {
       print(e);
+      return false;
     }
+  }
+
+  Future AuthAdd(List li) async {
+    final db = FirebaseFirestore.instance;
+    final _user = FirebaseAuth.instance;
+    await db.collection(_user.currentUser!.uid).doc('profile').set(
+      {
+        'ニックネーム': li[0],
+        'プロフィール画像': "",
+        '性別': li[1].toString(),
+        '平均血糖値': li[2].toString(),
+        '目標血糖値': li[3].toString(),
+        '血圧': li[4].toString(),
+      },
+      SetOptions(merge: true),
+    );
   }
 }

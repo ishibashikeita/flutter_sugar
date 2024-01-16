@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:sugar/firebase/db.dart';
+import 'package:sugar/userAdd.dart';
 import 'firebase_options.dart';
 import 'check.dart';
 import 'profile.dart';
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: StreamBuilder<User?>(
+      home: StreamBuilder(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -39,6 +40,14 @@ class MyApp extends StatelessWidget {
           }
           if (snapshot.hasData) {
             // User が null でなない、つまりサインイン済みのホーム画面へ
+            // WidgetsBinding.instance.addPostFrameCallback((_) {
+            //   Navigator.push(
+            //     context,
+            //     MaterialPageRoute(
+            //       builder: (context) => MyHomePage(),
+            //     ),
+            //   );
+            // });
 
             return MyHomePage();
           }
@@ -152,76 +161,120 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void setstatewidget() {
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _widgetOptions.elementAt(_selectedIndex),
-      floatingActionButton: Container(
-        width: 80,
-        height: 80,
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => Push3(
-                  date: DateTime.now(),
+    return FutureBuilder(
+      future: AuthService().userCheck(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
+              child: SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.orange.shade400,
                 ),
-                //この下アニメーション
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                  final Offset begin = Offset(0.0, 1.0);
-                  final Offset end = Offset.zero;
-                  final Animatable<Offset> tween = Tween(begin: begin, end: end)
-                      .chain(CurveTween(curve: Curves.easeInOut));
-                  final Animation<Offset> offsetAnimation =
-                      animation.drive(tween);
-                  return SlideTransition(
-                    position: offsetAnimation,
-                    child: child,
-                  );
-                },
               ),
+            ),
+          );
+        }
+
+        if (snapshot.hasData) {
+          print(snapshot.data);
+          if (snapshot.data == true) {
+            return Scaffold(
+              body: _widgetOptions.elementAt(_selectedIndex),
+              floatingActionButton: Container(
+                width: 80,
+                height: 80,
+                child: FloatingActionButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) =>
+                            Push3(
+                          date: DateTime.now(),
+                        ),
+                        //この下アニメーション
+                        transitionsBuilder:
+                            (context, animation, secondaryAnimation, child) {
+                          final Offset begin = Offset(0.0, 1.0);
+                          final Offset end = Offset.zero;
+                          final Animatable<Offset> tween =
+                              Tween(begin: begin, end: end)
+                                  .chain(CurveTween(curve: Curves.easeInOut));
+                          final Animation<Offset> offsetAnimation =
+                              animation.drive(tween);
+                          return SlideTransition(
+                            position: offsetAnimation,
+                            child: child,
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.draw,
+                        size: 40,
+                        color: Colors.white,
+                      ),
+                      Text(
+                        '記録',
+                        style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
+                      )
+                    ],
+                  ),
+                  shape: CircleBorder(),
+                  backgroundColor: Colors.orange.shade400,
+                ),
+              ),
+              bottomNavigationBar: BottomNavigationBar(
+                items: const <BottomNavigationBarItem>[
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.query_stats),
+                    label: 'チャート',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.account_circle),
+                    label: 'プロフィール',
+                  ),
+                ],
+                currentIndex: _selectedIndex,
+                backgroundColor: Colors.grey[100],
+                selectedItemColor: Colors.orange.shade400,
+                onTap: _onItemTapped, //Iconタップ時のイベント
+              ),
+              floatingActionButtonLocation:
+                  FloatingActionButtonLocation.centerDocked,
             );
-          },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.draw,
-                size: 40,
-                color: Colors.white,
-              ),
-              Text(
-                '記録',
-                style: TextStyle(
-                    fontSize: 15,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold),
-              )
-            ],
-          ),
-          shape: CircleBorder(),
-          backgroundColor: Colors.orange.shade400,
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.query_stats),
-            label: 'チャート',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'プロフィール',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        backgroundColor: Colors.grey[100],
-        selectedItemColor: Colors.orange.shade400,
-        onTap: _onItemTapped, //Iconタップ時のイベント
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+          } else {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserAddPage(),
+                ),
+              );
+            });
+            return Container();
+          }
+        } else {
+          return CircularProgressIndicator();
+        }
+      },
     );
   }
 }

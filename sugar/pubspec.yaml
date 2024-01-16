@@ -50,6 +50,7 @@ dependencies:
   sign_in_button: ^3.2.0
   google_sign_in_ios: ^5.7.3
   google_sign_in: ^6.2.1
+  after_layout: ^1.2.0
 
   
 
