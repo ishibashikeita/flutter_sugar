@@ -43,8 +43,10 @@ class _ProfileState extends State<Profile> {
               ),
             ),
             StreamBuilder(
-                stream:
-                    service.db.collection('user').doc('profile').snapshots(),
+                stream: service.db
+                    .collection(service.auth.currentUser!.uid)
+                    .doc('profile')
+                    .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     Map<String, dynamic> map =

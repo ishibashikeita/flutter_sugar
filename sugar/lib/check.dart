@@ -27,7 +27,10 @@ class _CheckState extends State<Check> {
   void initState() {
     super.initState();
     now_time = DateFormat('yyyy年M月dd日').format(DateTime.now()).toString();
-    _data = service.db.collection('user').doc('profile').get();
+    _data = service.db
+        .collection(service.auth.currentUser!.uid)
+        .doc('profile')
+        .get();
 
     sugarCount = 8;
   }
@@ -135,7 +138,7 @@ class _CheckState extends State<Check> {
                       children: [
                         StreamBuilder(
                             stream: service.db
-                                .collection('user')
+                                .collection(service.auth.currentUser!.uid)
                                 .doc('profile')
                                 .snapshots(),
                             builder: (context, snapshot) {
@@ -195,7 +198,7 @@ class _CheckState extends State<Check> {
                     ),
                     StreamBuilder(
                         stream: service.db
-                            .collection('user')
+                            .collection(service.auth.currentUser!.uid)
                             .doc('profile')
                             .snapshots(),
                         builder: (context, snapshot) {
@@ -243,7 +246,7 @@ class _CheckState extends State<Check> {
                     child: Center(
                         child: StreamBuilder(
                             stream: service.db
-                                .collection('user')
+                                .collection(service.auth.currentUser!.uid)
                                 .doc('profile')
                                 .snapshots(),
                             builder: (context, snapshot) {
@@ -289,11 +292,45 @@ class _CheckState extends State<Check> {
                       ],
                     ),
                   ),
-                  Container(
-                    height: _screenSize.height * 0.5,
-                    width: _screenSize.width * 0.9,
-                    child: LineChartWidget(pricePoints),
-                  ),
+                  FutureBuilder(
+                      future: service.recordCheck(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          if (snapshot.data) {
+                            return Container(
+                              height: _screenSize.height * 0.5,
+                              width: _screenSize.width * 0.9,
+                              child: LineChartWidget(pricePoints),
+                            );
+                          } else {
+                            return Container(
+                              height: _screenSize.height * 0.5,
+                              width: _screenSize.width * 0.9,
+                              color: Colors.black.withOpacity(0.1),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: _screenSize.width * 0.8,
+                                    height: _screenSize.height * 0.1,
+                                    child: FittedBox(
+                                      child: Text('※データが不足しています'),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: _screenSize.width * 0.7,
+                                    height: _screenSize.height * 0.05,
+                                    child: FittedBox(
+                                      child: Text('「記録」ボタンから血糖値を記録してみましょう！'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        }
+                        return Container();
+                      }),
                   const Padding(
                     padding: EdgeInsets.all(15.0),
                     child: Row(
@@ -307,309 +344,353 @@ class _CheckState extends State<Check> {
                       ],
                     ),
                   ),
-                  StreamBuilder(
-                      stream: service.db
-                          .collection('user')
-                          .doc('record')
-                          .snapshots(),
+                  FutureBuilder(
+                      future: service.recordCheck(),
                       builder: (context, snapshot) {
-                        if (snapshot.hasData == true) {
-                          Map<dynamic, dynamic> map =
-                              snapshot.data!.data() as Map<String, dynamic>;
-                          map =
-                              SplayTreeMap.from(map, (a, b) => b.compareTo(a));
+                        if (snapshot.hasData) {
+                          if (snapshot.data) {
+                            return StreamBuilder(
+                                stream: service.db
+                                    .collection('user')
+                                    .doc('record')
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasData == true) {
+                                    Map<dynamic, dynamic> map = snapshot.data!
+                                        .data() as Map<String, dynamic>;
+                                    map = SplayTreeMap.from(
+                                        map, (a, b) => b.compareTo(a));
 
-                          return ConstrainedBox(
-                            constraints: BoxConstraints(
-                                minHeight: _screenSize.height * 0.6,
-                                maxHeight: _screenSize.height * 12),
-                            child: Container(
-                              child: ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: sugarCount,
-                                itemBuilder: (context, index) {
-                                  if (index < (sugarCount - 1)) {
-                                    int face = 0;
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                          border: Border(
-                                        top: BorderSide(
-                                            color:
-                                                Colors.black.withOpacity(0.2)),
-                                      )),
-                                      child: ListTile(
-                                        tileColor: Colors.grey.shade200,
-                                        leading: Text(
-                                          DateFormat('M月dd日(')
-                                                  .format(DateTime.parse(map
-                                                      .keys
-                                                      .elementAt(index)))
-                                                  .toString() +
-                                              DateFormat.E('ja')
-                                                  .format(DateTime.parse(map
-                                                      .keys
-                                                      .elementAt(index)))
-                                                  .toString() +
-                                              ')',
-                                          style: TextStyle(
-                                              fontWeight: FontWeight.bold),
-                                        ),
-                                        title: Row(
-                                          children: [
-                                            SizedBox(
-                                              width: _screenSize.width * 0.1,
-                                            ),
-                                            Text(
-                                              map.values
-                                                  .elementAt(index)
-                                                  .toString(),
-                                              style: TextStyle(fontSize: 25),
-                                            ),
-                                            Text(
-                                              'mg/dl',
-                                              style: TextStyle(fontSize: 15),
-                                            ),
-                                            SizedBox(
-                                              width: _screenSize.width * 0.02,
-                                            ),
-                                            StreamBuilder(
-                                                stream: service.db
-                                                    .collection('user')
-                                                    .doc('profile')
-                                                    .snapshots(),
-                                                builder: (context, snapshot) {
-                                                  if (snapshot.hasData) {
-                                                    Map<String, dynamic> map2 =
-                                                        snapshot.data!.data()
-                                                            as Map<String,
-                                                                dynamic>;
+                                    return ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                          minHeight: _screenSize.height * 0.6,
+                                          maxHeight: _screenSize.height * 12),
+                                      child: Container(
+                                        child: ListView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount: sugarCount,
+                                          itemBuilder: (context, index) {
+                                            if (index < (sugarCount - 1)) {
+                                              int face = 0;
+                                              return Container(
+                                                decoration: BoxDecoration(
+                                                    border: Border(
+                                                  top: BorderSide(
+                                                      color: Colors.black
+                                                          .withOpacity(0.2)),
+                                                )),
+                                                child: ListTile(
+                                                  tileColor:
+                                                      Colors.grey.shade200,
+                                                  leading: Text(
+                                                    DateFormat('M月dd日(')
+                                                            .format(DateTime
+                                                                .parse(map.keys
+                                                                    .elementAt(
+                                                                        index)))
+                                                            .toString() +
+                                                        DateFormat.E('ja')
+                                                            .format(DateTime
+                                                                .parse(map.keys
+                                                                    .elementAt(
+                                                                        index)))
+                                                            .toString() +
+                                                        ')',
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                  ),
+                                                  title: Row(
+                                                    children: [
+                                                      SizedBox(
+                                                        width:
+                                                            _screenSize.width *
+                                                                0.1,
+                                                      ),
+                                                      Text(
+                                                        map.values
+                                                            .elementAt(index)
+                                                            .toString(),
+                                                        style: TextStyle(
+                                                            fontSize: 25),
+                                                      ),
+                                                      Text(
+                                                        'mg/dl',
+                                                        style: TextStyle(
+                                                            fontSize: 15),
+                                                      ),
+                                                      SizedBox(
+                                                        width:
+                                                            _screenSize.width *
+                                                                0.02,
+                                                      ),
+                                                      StreamBuilder(
+                                                          stream: service.db
+                                                              .collection(service
+                                                                  .auth
+                                                                  .currentUser!
+                                                                  .uid)
+                                                              .doc('profile')
+                                                              .snapshots(),
+                                                          builder: (context,
+                                                              snapshot) {
+                                                            if (snapshot
+                                                                .hasData) {
+                                                              Map<String,
+                                                                      dynamic>
+                                                                  map2 =
+                                                                  snapshot.data!
+                                                                          .data()
+                                                                      as Map<
+                                                                          String,
+                                                                          dynamic>;
 
-                                                    int k = map.values
-                                                        .elementAt(index);
+                                                              int k = map.values
+                                                                  .elementAt(
+                                                                      index);
 
-                                                    int i = (k -
-                                                        int.parse(
-                                                            map2['目標血糖値']));
+                                                              int i = (k -
+                                                                  int.parse(
+                                                                    map2[
+                                                                        '目標血糖値'],
+                                                                  ));
 
-                                                    return (i.isNegative)
-                                                        ? (i.abs() < 20)
-                                                            ? Text(
-                                                                '(' +
-                                                                    i.toString() +
-                                                                    ')',
+                                                              return (i
+                                                                      .isNegative)
+                                                                  ? (i.abs() <
+                                                                          20)
+                                                                      ? Text(
+                                                                          '(' +
+                                                                              i.toString() +
+                                                                              ')',
+                                                                          style: TextStyle(
+                                                                              fontSize: 20,
+                                                                              color: Colors.green),
+                                                                        )
+                                                                      : (i.abs() <
+                                                                              40)
+                                                                          ? Text(
+                                                                              '(' + i.toString() + ')',
+                                                                              style: TextStyle(
+                                                                                fontSize: 20,
+                                                                                color: Colors.orange.shade400,
+                                                                              ),
+                                                                            )
+                                                                          : Text(
+                                                                              '(' + i.toString() + ')',
+                                                                              style: TextStyle(
+                                                                                fontSize: 20,
+                                                                                color: Colors.red,
+                                                                              ),
+                                                                            )
+                                                                  : (i.abs() <
+                                                                          20)
+                                                                      ? Text(
+                                                                          '(+' +
+                                                                              i.toString() +
+                                                                              ')',
+                                                                          style: TextStyle(
+                                                                              fontSize: 20,
+                                                                              color: Colors.green),
+                                                                        )
+                                                                      : (i.abs() <
+                                                                              40)
+                                                                          ? Text(
+                                                                              '(+' + i.toString() + ')',
+                                                                              style: TextStyle(
+                                                                                fontSize: 20,
+                                                                                color: Colors.orange.shade400,
+                                                                              ),
+                                                                            )
+                                                                          : Text(
+                                                                              '(+' + i.toString() + ')',
+                                                                              style: TextStyle(
+                                                                                fontSize: 20,
+                                                                                color: Colors.red,
+                                                                              ),
+                                                                            );
+                                                            } else {
+                                                              return Text(
+                                                                '(+0.1)',
                                                                 style: TextStyle(
                                                                     fontSize:
-                                                                        20,
-                                                                    color: Colors
-                                                                        .green),
-                                                              )
-                                                            : (i.abs() < 40)
-                                                                ? Text(
-                                                                    '(' +
-                                                                        i.toString() +
-                                                                        ')',
-                                                                    style:
-                                                                        TextStyle(
-                                                                      fontSize:
-                                                                          20,
+                                                                        20),
+                                                              );
+                                                            }
+                                                          }),
+                                                    ],
+                                                  ),
+                                                  trailing: FutureBuilder(
+                                                      future: _data,
+                                                      builder:
+                                                          (context, snapshot) {
+                                                        if (snapshot.hasError) {
+                                                          return const SizedBox(
+                                                              height: 50,
+                                                              width: 50,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                valueColor:
+                                                                    AlwaysStoppedAnimation(
+                                                                        Colors
+                                                                            .blue),
+                                                                strokeWidth:
+                                                                    8.0,
+                                                              ));
+                                                        }
+                                                        if (snapshot
+                                                                .connectionState ==
+                                                            ConnectionState
+                                                                .done) {
+                                                          int k = map.values
+                                                              .elementAt(index);
+                                                          Map<String, dynamic>
+                                                              map2 = snapshot
+                                                                      .data!
+                                                                      .data()
+                                                                  as Map<String,
+                                                                      dynamic>;
+                                                          int i = (k -
+                                                              int.parse(map2[
+                                                                  '目標血糖値']));
+                                                          return (i.abs() < 20)
+                                                              ? Icon(
+                                                                  Icons.mood,
+                                                                  color: Colors
+                                                                      .green,
+                                                                  size: 35,
+                                                                )
+                                                              : (i.abs() < 40)
+                                                                  ? Icon(
+                                                                      Icons
+                                                                          .sentiment_satisfied,
                                                                       color: Colors
                                                                           .orange
                                                                           .shade400,
-                                                                    ),
-                                                                  )
-                                                                : Text(
-                                                                    '(' +
-                                                                        i.toString() +
-                                                                        ')',
-                                                                    style:
-                                                                        TextStyle(
-                                                                      fontSize:
-                                                                          20,
+                                                                      size: 35,
+                                                                    )
+                                                                  : Icon(
+                                                                      Icons
+                                                                          .sentiment_very_dissatisfied,
                                                                       color: Colors
                                                                           .red,
-                                                                    ),
-                                                                  )
-                                                        : (i.abs() < 20)
-                                                            ? Text(
-                                                                '(+' +
-                                                                    i.toString() +
-                                                                    ')',
-                                                                style: TextStyle(
-                                                                    fontSize:
-                                                                        20,
-                                                                    color: Colors
-                                                                        .green),
-                                                              )
-                                                            : (i.abs() < 40)
-                                                                ? Text(
-                                                                    '(+' +
-                                                                        i.toString() +
-                                                                        ')',
-                                                                    style:
-                                                                        TextStyle(
-                                                                      fontSize:
-                                                                          20,
-                                                                      color: Colors
-                                                                          .orange
-                                                                          .shade400,
-                                                                    ),
-                                                                  )
-                                                                : Text(
-                                                                    '(+' +
-                                                                        i.toString() +
-                                                                        ')',
-                                                                    style:
-                                                                        TextStyle(
-                                                                      fontSize:
-                                                                          20,
-                                                                      color: Colors
-                                                                          .red,
-                                                                    ),
-                                                                  );
+                                                                      size: 35,
+                                                                    );
+                                                        }
+                                                        return Text('loading');
+                                                      }),
+                                                  // trailing: Icon(
+                                                  //   Icons.mood,
+                                                  //   color: Colors.green,
+                                                  //   size: 35,
+                                                  // ),
+                                                ),
+                                              );
+                                            } else {
+                                              return ListTile(
+                                                onTap: () {
+                                                  if (sugarCount < 32) {
+                                                    setState(() {
+                                                      sugarCount += 8;
+                                                    });
                                                   } else {
-                                                    return Text(
+                                                    Fluttertoast.showToast(
+                                                        msg:
+                                                            "取得上限(1ヶ月分)に達しました。",
+                                                        toastLength:
+                                                            Toast.LENGTH_SHORT,
+                                                        gravity:
+                                                            ToastGravity.CENTER,
+                                                        timeInSecForIosWeb: 1,
+                                                        backgroundColor: Colors
+                                                            .black
+                                                            .withOpacity(0.5),
+                                                        textColor: Colors.white,
+                                                        fontSize: 25.0);
+                                                  }
+                                                },
+                                                title: Icon(Icons.expand_more),
+                                                tileColor: Colors.grey.shade200,
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return Container(
+                                    height: _screenSize.height * 0.5,
+                                    width: _screenSize.width * 0.9,
+                                    child: ListView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      itemCount: 7 + 1,
+                                      itemBuilder: (context, index) {
+                                        return (index != 7)
+                                            ? ListTile(
+                                                tileColor: Colors.grey.shade200,
+                                                leading: const Text(
+                                                  '10月10日',
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                                title: Row(
+                                                  children: [
+                                                    SizedBox(
+                                                      width: _screenSize.width *
+                                                          0.05,
+                                                    ),
+                                                    Text(
+                                                      (index * 10).toString(),
+                                                      style: TextStyle(
+                                                          fontSize: 25),
+                                                    ),
+                                                    Text(
+                                                      'mg/dl',
+                                                      style: TextStyle(
+                                                          fontSize: 15),
+                                                    ),
+                                                    SizedBox(
+                                                      width: _screenSize.width *
+                                                          0.01,
+                                                    ),
+                                                    Text(
                                                       '(+0.1)',
                                                       style: TextStyle(
                                                           fontSize: 20),
-                                                    );
-                                                  }
-                                                }),
-                                          ],
-                                        ),
-                                        trailing: FutureBuilder(
-                                            future: _data,
-                                            builder: (context, snapshot) {
-                                              if (snapshot.hasError) {
-                                                return const SizedBox(
-                                                    height: 50,
-                                                    width: 50,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation(
-                                                              Colors.blue),
-                                                      strokeWidth: 8.0,
-                                                    ));
-                                              }
-                                              if (snapshot.connectionState ==
-                                                  ConnectionState.done) {
-                                                int k =
-                                                    map.values.elementAt(index);
-                                                Map<String, dynamic> map2 =
-                                                    snapshot.data!.data()
-                                                        as Map<String, dynamic>;
-                                                int i = (k -
-                                                    int.parse(map2['目標血糖値']));
-                                                return (i.abs() < 20)
-                                                    ? Icon(
-                                                        Icons.mood,
-                                                        color: Colors.green,
-                                                        size: 35,
-                                                      )
-                                                    : (i.abs() < 40)
-                                                        ? Icon(
-                                                            Icons
-                                                                .sentiment_satisfied,
-                                                            color: Colors.orange
-                                                                .shade400,
-                                                            size: 35,
-                                                          )
-                                                        : Icon(
-                                                            Icons
-                                                                .sentiment_very_dissatisfied,
-                                                            color: Colors.red,
-                                                            size: 35,
-                                                          );
-                                              }
-                                              return Text('loading');
-                                            }),
-                                        // trailing: Icon(
-                                        //   Icons.mood,
-                                        //   color: Colors.green,
-                                        //   size: 35,
-                                        // ),
-                                      ),
-                                    );
-                                  } else {
-                                    return ListTile(
-                                      onTap: () {
-                                        if (sugarCount < 32) {
-                                          setState(() {
-                                            sugarCount += 8;
-                                          });
-                                        } else {
-                                          Fluttertoast.showToast(
-                                              msg: "取得上限(1ヶ月分)に達しました。",
-                                              toastLength: Toast.LENGTH_SHORT,
-                                              gravity: ToastGravity.CENTER,
-                                              timeInSecForIosWeb: 1,
-                                              backgroundColor:
-                                                  Colors.black.withOpacity(0.5),
-                                              textColor: Colors.white,
-                                              fontSize: 25.0);
-                                        }
+                                                    ),
+                                                  ],
+                                                ),
+                                              )
+                                            : ListTile(
+                                                tileColor: Colors.grey.shade200,
+                                                title: Center(
+                                                  child: IconButton(
+                                                    icon:
+                                                        Icon(Icons.expand_more),
+                                                    onPressed: () {},
+                                                  ),
+                                                ),
+                                              );
                                       },
-                                      title: Icon(Icons.expand_more),
-                                      tileColor: Colors.grey.shade200,
-                                    );
-                                  }
-                                },
+                                    ),
+                                  );
+                                });
+                          } else {
+                            return Container(
+                              width: _screenSize.width * 0.9,
+                              height: _screenSize.height * 0.1,
+                              child: Center(
+                                child: Text('「記録」ボタンから血糖値を記録してみましょう！'),
                               ),
-                            ),
-                          );
+                            );
+                          }
                         }
-                        return Container(
-                          height: _screenSize.height * 0.5,
-                          width: _screenSize.width * 0.9,
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: 7 + 1,
-                            itemBuilder: (context, index) {
-                              return (index != 7)
-                                  ? ListTile(
-                                      tileColor: Colors.grey.shade200,
-                                      leading: const Text(
-                                        '10月10日',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      title: Row(
-                                        children: [
-                                          SizedBox(
-                                            width: _screenSize.width * 0.05,
-                                          ),
-                                          Text(
-                                            (index * 10).toString(),
-                                            style: TextStyle(fontSize: 25),
-                                          ),
-                                          Text(
-                                            'mg/dl',
-                                            style: TextStyle(fontSize: 15),
-                                          ),
-                                          SizedBox(
-                                            width: _screenSize.width * 0.01,
-                                          ),
-                                          Text(
-                                            '(+0.1)',
-                                            style: TextStyle(fontSize: 20),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : ListTile(
-                                      tileColor: Colors.grey.shade200,
-                                      title: Center(
-                                        child: IconButton(
-                                          icon: Icon(Icons.expand_more),
-                                          onPressed: () {},
-                                        ),
-                                      ),
-                                    );
-                            },
-                          ),
-                        );
+                        return Container();
                       }),
                   SizedBox(
                     height: _screenSize.height * 0.1,

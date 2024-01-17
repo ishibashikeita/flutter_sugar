@@ -114,7 +114,7 @@ class _PushState extends State<Push> {
                 onPressed: () {
                   if (data != '') {
                     service.db
-                        .collection('user')
+                        .collection(service.auth.currentUser!.uid)
                         .doc('profile')
                         .update({widget.param.keys.elementAt(0): data});
                     Navigator.pop(context);
@@ -287,7 +287,10 @@ class _PushState2 extends State<Push2> {
               width: 200,
               child: ElevatedButton(
                 onPressed: () {
-                  service.db.collection('user').doc('profile').update({
+                  service.db
+                      .collection(service.auth.currentUser!.uid)
+                      .doc('profile')
+                      .update({
                     widget.param.keys.elementAt(0):
                         widget.param.values.elementAt(0)
                   });
@@ -561,7 +564,7 @@ class _PushState4 extends State<Push4> {
                   if (data != '') {
                     if (int.parse(data) <= 200) {
                       service.db
-                          .collection('user')
+                          .collection(service.auth.currentUser!.uid)
                           .doc('profile')
                           .update({widget.param.keys.elementAt(0): data});
                       Navigator.pop(context);

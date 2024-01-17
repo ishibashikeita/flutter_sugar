@@ -8,6 +8,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FirebaseService {
   final db = FirebaseFirestore.instance;
   final db2 = FirebaseFirestore.instance.collection('user');
+  final auth = FirebaseAuth.instance;
+
+  Stream readAuthProfile() async* {
+    final data =
+        await db.collection(auth.currentUser!.uid).doc('profile').snapshots();
+    yield data;
+  }
 
   Stream readProfile() async* {
     final data = db.collection('user').doc('profile').snapshots();
@@ -15,22 +22,33 @@ class FirebaseService {
   }
 
   Future updateUser(String s, int i) async {
-    final _data = await db2.doc('record').get();
-    final li = _data.data();
-    final Map<String, dynamic> map =
-        SplayTreeMap.from(li!, (a, b) => b.compareTo(a));
-    final list = map.keys.toList();
-    List newList = list
-        .map((e) =>
-            DateFormat('yyyy年M月dd日').format(DateTime.parse(e)).toString())
-        .toList();
-    //print(newList);
-    //print(DateFormat('yyyy年M月dd日').format(DateTime.parse(s)).toString());
-    if (newList.contains(
-        DateFormat('yyyy年M月dd日').format(DateTime.parse(s)).toString())) {
-      await db2.doc('record').set({list[0]: i}, SetOptions(merge: true));
-    } else {
-      await db2.doc('record').set({s: i}, SetOptions(merge: true));
+    try {
+      final _data =
+          await db.collection(auth.currentUser!.uid).doc('record').get();
+      final li = _data.data();
+      final Map<String, dynamic> map =
+          SplayTreeMap.from(li!, (a, b) => b.compareTo(a));
+      final list = map.keys.toList();
+      List newList = list
+          .map((e) =>
+              DateFormat('yyyy年M月dd日').format(DateTime.parse(e)).toString())
+          .toList();
+      //print(newList);
+      //print(DateFormat('yyyy年M月dd日').format(DateTime.parse(s)).toString());
+      if (newList.contains(
+          DateFormat('yyyy年M月dd日').format(DateTime.parse(s)).toString())) {
+        await db
+            .collection(auth.currentUser!.uid)
+            .doc('record')
+            .set({list[0]: i}, SetOptions(merge: true));
+      } else {
+        await db
+            .collection(auth.currentUser!.uid)
+            .doc('record')
+            .set({s: i}, SetOptions(merge: true));
+      }
+    } catch (e) {
+      await db.collection(auth.currentUser!.uid).doc('record').set({s: i});
     }
   }
 
@@ -41,6 +59,24 @@ class FirebaseService {
     final Map<String, dynamic> map =
         SplayTreeMap.from(li!, (a, b) => b.compareTo(a));
     return map;
+  }
+
+  Future recordCheck() async {
+    try {
+      final _user = FirebaseAuth.instance;
+      DocumentSnapshot<Map<String, dynamic>> _collectionRef =
+          await FirebaseFirestore.instance
+              // .collection('user')
+              .collection(_user.currentUser!.uid)
+              .doc('record')
+              .get();
+      //ここをuserに変えれば一旦動く。
+      final _check = _collectionRef.exists;
+      return _check;
+    } catch (e) {
+      print(e);
+      return false;
+    }
   }
 
   // Stream<Map<String, dynamic>> weekSugar() async* {
